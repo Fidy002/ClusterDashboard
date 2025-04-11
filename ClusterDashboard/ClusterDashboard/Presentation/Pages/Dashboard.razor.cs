@@ -1,5 +1,10 @@
-﻿namespace ClusterDashboard.Pages;
+﻿using ClusterDashboard.Application.Interfaces;
+using ClusterDashboard.Application.Models;
+using Microsoft.AspNetCore.Components;
 
-partial class Dashboard
+namespace ClusterDashboard.Pages;
+
+partial class Dashboard : ComponentBase
 {
+	
 }

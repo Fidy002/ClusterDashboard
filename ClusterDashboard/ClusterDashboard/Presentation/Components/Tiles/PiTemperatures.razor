@@ -1,3 +1,17 @@
-﻿@rendermode InteractiveServer
+﻿@using ClusterDashboard.Client.Components
+@rendermode InteractiveServer
 
-<h3>PiTemperatures</h3>
+@if (_isLoading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}
+else
+{
+    @foreach (var node in _nodes)
+    {
+        <Tile>
+            <h4>@node.NodeName</h4>
+            <p>@($"{node.Temperature:F1} °C")</p>
+        </Tile>
+    }
+}

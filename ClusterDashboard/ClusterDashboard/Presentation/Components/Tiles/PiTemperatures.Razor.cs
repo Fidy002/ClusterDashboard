@@ -1,15 +1,34 @@
 ﻿using ClusterDashboard.Application.Interfaces;
+using ClusterDashboard.Application.Models;
+using Microsoft.AspNetCore.Components;
 
 namespace ClusterDashboard.Presentation.Components.Tiles;
 
-partial class PiTemperatures
+public partial class PiTemperatures : ComponentBase
 {
-	private readonly INodeService _nodeService;
+	[Inject] private INodeService NodeService { get; set; } = default!;
 
-	public PiTemperatures(INodeService nodeService)
+	private List<NodeInformation> _nodes = new();
+	private bool _isLoading = true;
+
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
-		_nodeService = nodeService;
+		if (!firstRender) return;
+		try
+		{
+			_nodes = await NodeService.GetNodeInformation();
+		}
+		finally
+		{
+			_isLoading = false;
+			StateHasChanged();
+		}
 	}
 
+	protected override async Task OnInitializedAsync()
+	{
 
+	}
 }
+

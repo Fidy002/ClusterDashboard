@@ -3,39 +3,53 @@
 using Renci.SshNet;
 using ClusterDashboard.Application.Interfaces;
 using System.Text;
+using System.Globalization;
+using Microsoft.Extensions.Logging;
 
-public class SshDeviceTemperatureService : IDeviceTemperatureService
+public class DeviceTemperatureService : IDeviceTemperatureService
 {
+	private readonly ILogger<DeviceTemperatureService> _logger;
+
+	public DeviceTemperatureService(ILogger<DeviceTemperatureService> logger)
+	{
+		_logger = logger;
+	}
 	public Task<double?> GetTemperatureAsync(string hostname, string username, string privateKey)
 	{
-		try
+		return Task.Run(() =>
 		{
-			using var privateKeyStream = new MemoryStream(Encoding.UTF8.GetBytes(privateKey));
-			var keyFile = new PrivateKeyFile(privateKeyStream);
-			var authMethod = new PrivateKeyAuthenticationMethod(username, keyFile);
-			var connectionInfo = new ConnectionInfo(hostname, 22, username, authMethod);
+			try
+			{
+				_logger.LogInformation($"Try host: {hostname} with user {username}");
 
-			using var client = new SshClient(connectionInfo);
-			client.Connect();
+				using var privateKeyStream = new MemoryStream(Encoding.UTF8.GetBytes(privateKey));
+				var keyFile = new PrivateKeyFile(privateKeyStream);
+				var authMethod = new PrivateKeyAuthenticationMethod(username, keyFile);
+				var connectionInfo = new ConnectionInfo(hostname, 22, username, authMethod);
 
-			var command = client.CreateCommand("vcgencmd measure_temp");
-			var result = command.Execute()?.Trim();
+				using var client = new SshClient(connectionInfo);
+				client.Connect();
 
-			client.Disconnect();
+				var command = client.CreateCommand("vcgencmd measure_temp");
+				var result = command.Execute()?.Trim();
 
-			if (string.IsNullOrWhiteSpace(result))
-				return Task.FromResult<double?>(null);
+				client.Disconnect();
 
-			var tempPart = result.Replace("temp=", "").Replace("'C", "");
+				if (string.IsNullOrWhiteSpace(result))
+					return (double?)null;
 
-			if (double.TryParse(tempPart, System.Globalization.CultureInfo.InvariantCulture, out var temp))
-				return Task.FromResult<double?>(temp);
+				var tempPart = result.Replace("temp=", "").Replace("'C", "");
 
-			return Task.FromResult<double?>(null);
-		}
-		catch
-		{
-			return Task.FromResult<double?>(null);
-		}
+				return double.TryParse(tempPart, CultureInfo.InvariantCulture, out var temp)
+					? temp
+					: (double?)null;
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex.Message,ex);
+				return null;
+			}
+		});
 	}
+
 }
